@@ -141,10 +141,8 @@
           <span class="hud-hp"><span id="hp-bar-lv">██████████████████████████████████████████████████</span></span>
         </div>
       </div>
-      <!-- 游戏画布 -->
-      <div class="game-canvas-wrap">
-        <canvas id="game-canvas" width="640" height="360"></canvas>
-      </div>
+      <!-- 游戏画布，直接全屏 -->
+      <canvas id="game-canvas" width="640" height="360"></canvas>
       <!-- 移动端虚拟按键 -->
       <div class="game-controls" id="game-controls">
         <div class="ctrl-dpad">
@@ -158,16 +156,45 @@
     </div>
   </section>
 
-  <!-- ====== 场景四：毕业温情寄语（占位） ====== -->
+  <!-- ====== 场景四：白光转场与中考寄语 ====== -->
   <section id="scene-4" class="scene hidden">
-    <div class="crt-overlay"></div>
-    <div class="placeholder-text">场景四：白光转场与中考毕业温情寄语</div>
+    <!-- 白光闪屏层 -->
+    <div class="white-flash" id="white-flash"></div>
+    <!-- 寄语文字 -->
+    <div class="message-box" id="message-box">
+      <p class="message-text">
+        恭喜完成中考！<br><br>
+        未来的路一定会有很多迷茫的时候，<br>
+        希望你做一个无忧无虑的孩子。
+      </p>
+    </div>
   </section>
 
-  <!-- ====== 场景五：生日蜡烛与烟花（占位） ====== -->
+  <!-- ====== 场景五：关灯点蜡烛与弹幕庆祝 ====== -->
   <section id="scene-5" class="scene hidden">
-    <div class="crt-overlay"></div>
-    <div class="placeholder-text">场景五：关灯点蜡烛、烟花与弹幕祝福墙</div>
+    <!-- 暗色遮罩（20% 亮度） -->
+    <div class="dark-room" id="dark-room"></div>
+    <!-- 烟花画布 -->
+    <canvas id="firework-canvas"></canvas>
+    <!-- 蛋糕区域 -->
+    <div class="cake-area" id="cake-area">
+      <div class="cake-body">
+        <pre class="cake-ascii">
+    ★～★～★
+   |  🕯  🕯  |
+   |  🕯  🕯  |
+   |  🕯  🕯  |
+   |~~~~~~~~~|
+   | 生日快乐 |
+   |_________|
+        </pre>
+      </div>
+      <div class="cake-name">邓均泽 生日快乐！</div>
+    </div>
+    <!-- 打火机（跟随鼠标） -->
+    <div class="lighter" id="lighter">🔥</div>
+    <!-- 弹幕容器 -->
+    <div class="danmaku-stage" id="danmaku-stage"></div>
   </section>
 
   <script src="script.js"></script>

@@ -408,7 +408,7 @@ function runScene0() {
 
     if (!name) return; // 空输入忽略
 
-    if (name === '邓钧泽') {
+    if (name === '邓均泽') {
       // 验证通过：绿色闪光 → 切换到场景一
       sound.init();
       sound.playCheckmark();
@@ -1150,11 +1150,261 @@ function switchToGame() {
 
 function gameClear() {
   gameInstance = null;
-  scenes.switchTo(4);
+  scenes.switchTo(4).then(() => runScene4());
 }
 
-function switchToFinale() {
-  scenes.switchTo(5);
+// ============================================================
+// 场景四：白光转场与中考寄语
+// ============================================================
+
+async function runScene4() {
+  const flash = document.getElementById('white-flash');
+  const msgBox = document.getElementById('message-box');
+
+  // 白光乍现
+  flash.classList.add('blast');
+
+  // 1.2 秒后浮现文字
+  await wait(1300);
+  msgBox.classList.add('show');
+
+  // 停留 5 秒
+  await wait(5000);
+
+  // 切换到场景五
+  await scenes.switchTo(5);
+  runScene5();
+}
+
+// ============================================================
+// 场景五：关灯点蜡烛 + 烟花 + 弹幕祝福
+// ============================================================
+
+async function runScene5() {
+  const darkRoom = document.getElementById('dark-room');
+  const cakeArea = document.getElementById('cake-area');
+  const cakeName = document.querySelector('.cake-name');
+  const lighter = document.getElementById('lighter');
+  const danmakuStage = document.getElementById('danmaku-stage');
+  const fwCanvas = document.getElementById('firework-canvas');
+
+  // 重置
+  darkRoom.classList.remove('lit');
+  cakeArea.classList.remove('show');
+  cakeName.classList.remove('show');
+  lighter.classList.remove('active', 'near-candle');
+  danmakuStage.innerHTML = '';
+  fwCanvas.width = window.innerWidth;
+  fwCanvas.height = window.innerHeight;
+
+  let candlesLit = false;
+
+  // 蛋糕渐显
+  await wait(400);
+  cakeArea.classList.add('show');
+
+  // 激活打火机
+  lighter.classList.add('active');
+  document.body.style.cursor = 'none';
+
+  // ----- 打火机跟随鼠标 -----
+  const onMouseMove = (e) => {
+    lighter.style.left = e.clientX + 'px';
+    lighter.style.top = e.clientY + 'px';
+
+    // 检测是否靠近蜡烛区（蛋糕顶部）
+    if (!candlesLit) {
+      const cakeRect = cakeArea.getBoundingClientRect();
+      const candleY = cakeRect.top + 40;
+      const nearX = Math.abs(e.clientX - (cakeRect.left + cakeRect.width/2)) < 60;
+      const nearY = Math.abs(e.clientY - candleY) < 50;
+      if (nearX && nearY) {
+        lighter.classList.add('near-candle');
+      } else {
+        lighter.classList.remove('near-candle');
+      }
+    }
+  };
+
+  // ----- 点击蜡烛点火 -----
+  const onCandleClick = (e) => {
+    if (candlesLit) return;
+    const cakeRect = cakeArea.getBoundingClientRect();
+    const candleY = cakeRect.top + 40;
+    const nearX = Math.abs(e.clientX - (cakeRect.left + cakeRect.width/2)) < 70;
+    const nearY = Math.abs(e.clientY - candleY) < 60;
+
+    if (nearX && nearY) {
+      candlesLit = true;
+      lightCandles();
+    }
+  };
+
+  window.addEventListener('mousemove', onMouseMove);
+  window.addEventListener('click', onCandleClick);
+  // 移动端触摸
+  window.addEventListener('touchmove', (e) => {
+    const t = e.touches[0];
+    lighter.style.left = t.clientX + 'px';
+    lighter.style.top = t.clientY + 'px';
+  });
+  window.addEventListener('touchend', (e) => {
+    if (candlesLit) return;
+    const t = e.changedTouches[0];
+    const cakeRect = cakeArea.getBoundingClientRect();
+    const candleY = cakeRect.top + 40;
+    if (Math.abs(t.clientX - (cakeRect.left + cakeRect.width/2)) < 80 &&
+        Math.abs(t.clientY - candleY) < 70) {
+      candlesLit = true;
+      lightCandles();
+    }
+  });
+
+  // ----- 点火后的庆祝 -----
+  async function lightCandles() {
+    // 隐藏打火机
+    lighter.classList.remove('active', 'near-candle');
+    document.body.style.cursor = '';
+    window.removeEventListener('mousemove', onMouseMove);
+    window.removeEventListener('click', onCandleClick);
+
+    // 掌声 + 完成音效
+    sound.init();
+    sound.playComplete();
+    await wait(200);
+    sound.playComplete();
+
+    // 亮灯
+    darkRoom.classList.add('lit');
+
+    // 名字弹出
+    await wait(300);
+    cakeName.classList.add('show');
+
+    // 烟花
+    startFireworks(fwCanvas);
+
+    // 弹幕启动
+    startDanmaku(danmakuStage);
+
+    // 5 秒后可以切换到终局（或者就这样一直放着）
+  }
+}
+
+// ----- 烟花引擎 -----
+
+function startFireworks(canvas) {
+  const ctx = canvas.getContext('2d');
+  const particles = [];
+  const W = canvas.width;
+  const H = canvas.height;
+
+  function burst(cx, cy, color) {
+    const count = 40 + Math.floor(Math.random() * 30);
+    for (let i = 0; i < count; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 2 + Math.random() * 5;
+      particles.push({
+        x: cx, y: cy, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed,
+        life: 40 + Math.random() * 40, maxLife: 80, color,
+        gravity: 0.03 + Math.random() * 0.04,
+      });
+    }
+  }
+
+  // 定时在随机位置放烟花
+  const burstInterval = setInterval(() => {
+    const cx = W * 0.2 + Math.random() * W * 0.6;
+    const cy = H * 0.1 + Math.random() * H * 0.4;
+    const colors = ['#ff4444','#ff8844','#ffcc00','#44ff44','#44ccff','#ff44ff','#ffaa00','#ffffff'];
+    burst(cx, cy, colors[Math.floor(Math.random() * colors.length)]);
+  }, 800);
+
+  // 首次立即放两朵
+  burst(W*0.3, H*0.15, '#ffcc00');
+  burst(W*0.7, H*0.2, '#ff44ff');
+
+  function draw() {
+    ctx.fillStyle = 'rgba(0,0,0,0.15)'; // 拖尾
+    ctx.fillRect(0, 0, W, H);
+
+    for (let i = particles.length-1; i >= 0; i--) {
+      const p = particles[i];
+      p.x += p.vx; p.y += p.vy;
+      p.vy += p.gravity;
+      p.life--;
+      if (p.life <= 0) { particles.splice(i, 1); continue; }
+      const alpha = p.life / p.maxLife;
+      ctx.fillStyle = p.color.replace(')', ', ' + alpha + ')').replace('rgb', 'rgba');
+      if (p.color.startsWith('#')) {
+        const r = parseInt(p.color.slice(1,3),16), g = parseInt(p.color.slice(3,5),16), b = parseInt(p.color.slice(5,7),16);
+        ctx.fillStyle = 'rgba(' + r + ',' + g + ',' + b + ',' + alpha + ')';
+      }
+      ctx.beginPath(); ctx.arc(p.x, p.y, 2.5 * alpha + 1, 0, Math.PI*2); ctx.fill();
+    }
+    requestAnimationFrame(draw);
+  }
+  draw();
+
+  // 存一下以便停止（不需要，一直放）
+  canvas._fireworkInterval = burstInterval;
+}
+
+// ----- 弹幕引擎 -----
+
+function startDanmaku(stage) {
+  const blessings = [
+    '中考必胜！',
+    '全服第一大帅哥生日快乐！',
+    '邓均泽永远无忧无虑！',
+    '未来可期，前程似锦！',
+    '15岁生日快乐！',
+    '天天开心，事事顺利！',
+    '你是最棒的！',
+    '考上理想高中！',
+    '兄弟永远挺你！',
+    '无忧无虑，自由自在！',
+  ];
+
+  // 弹幕行高
+  const rowH = 36;
+  const maxRows = Math.floor(stage.clientHeight / rowH);
+  let rowTimers = new Array(maxRows).fill(0);
+
+  function spawnOne() {
+    const row = Math.floor(Math.random() * maxRows);
+    const now = Date.now();
+    // 每行至少间隔 1.5 秒
+    if (now - rowTimers[row] < 1500) return;
+    rowTimers[row] = now;
+
+    const text = blessings[Math.floor(Math.random() * blessings.length)];
+    const el = document.createElement('div');
+    el.className = 'danmaku-item';
+    el.textContent = text;
+    el.style.top = (row * rowH + 8) + 'px';
+    el.style.left = '100vw';
+
+    // 随机颜色
+    const colors = ['#ffcc00','#ff6644','#44ccff','#88ff44','#ff44aa','#ffffff','#ffaa00'];
+    el.style.color = colors[Math.floor(Math.random() * colors.length)];
+
+    // 飞行时间 6~10 秒
+    const dur = 6 + Math.random() * 4;
+    el.style.animationDuration = dur + 's';
+
+    stage.appendChild(el);
+
+    // 动画结束后移除
+    setTimeout(() => { if (el.parentNode) el.parentNode.removeChild(el); }, dur * 1000 + 200);
+  }
+
+  // 每 600ms 尝试发射一条
+  const spawnInterval = setInterval(spawnOne, 600);
+  spawnOne();
+  spawnOne();
+
+  stage._danmakuInterval = spawnInterval;
 }
 
 // ============================================================
