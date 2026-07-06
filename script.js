@@ -732,7 +732,7 @@ function preloadSprites() {
       const img = new Image();
       img.onload = () => { pending--; if (pending === 0) resolve(); };
       img.onerror = () => { pending--; if (pending === 0) resolve(); };
-      img.src = src;
+      img.src = encodeURI(src);
       SPRITES[key] = img;
     }
     if (pending === 0) resolve();
